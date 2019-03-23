@@ -11,4 +11,5 @@ public class RequestModel {
     int threads;
     int load;
     int timeInMilis;
+    boolean transactional;
 }

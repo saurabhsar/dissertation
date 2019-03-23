@@ -13,13 +13,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Path("/gen-load")
 @Produces(MediaType.APPLICATION_JSON)
-public class HelloWorldResource {
+public class LoadGeneratorResourcee {
     private final String template;
     private final String defaultName;
     private final AtomicLong counter;
     private RMQLoadGenImpl rmqLoadGen = new RMQLoadGenImpl();
 
-    public HelloWorldResource(String template, String defaultName) {
+    public LoadGeneratorResourcee(String template, String defaultName) {
         this.template = template;
         this.defaultName = defaultName;
         this.counter = new AtomicLong();
@@ -37,7 +37,7 @@ public class HelloWorldResource {
     @Path("/rmq")
     public Response LoadRMQ(RequestModel requestModel) {
 
-        rmqLoadGen.initialize(true);
+        rmqLoadGen.initialize(requestModel.transactional);
 
         for (int i = 0; i < requestModel.getThreads(); i++) {
 

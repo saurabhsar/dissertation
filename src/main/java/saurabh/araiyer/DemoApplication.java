@@ -3,7 +3,7 @@ package saurabh.araiyer;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import resource.HelloWorldResource;
+import resource.LoadGeneratorResourcee;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -28,7 +28,7 @@ public class DemoApplication extends Application<AppConfiguration> {
     @Override
     public void run(AppConfiguration configuration,
                     Environment environment) throws UnknownHostException {
-        final HelloWorldResource resource = new HelloWorldResource(
+        final LoadGeneratorResourcee resource = new LoadGeneratorResourcee(
                 configuration.getTemplate(),
                 configuration.getDefaultName()
         );
