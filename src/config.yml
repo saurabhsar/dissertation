@@ -1,0 +1,11 @@
+server:
+  adminConnectors:
+    -
+      port: 1729
+      type: http
+  applicationConnectors:
+    -
+      acceptorThreads: 7
+      port: 1730
+      selectorThreads: 14
+      type: http

@@ -1,18 +1,22 @@
 package load.gen;
 
+import command.RMQCommand;
+
 public class RMQLoadGenImpl implements LoadGenI {
-    @Override
-    public void initialize() {
 
+    private RMQCommand rmqCommand = null;
+    private boolean transactional;
+
+    @Override
+    public void initialize(boolean transactional) {
+        this.transactional = transactional;
     }
 
     @Override
-    public void startTransaction() {
+    public void run() {
 
-    }
+        rmqCommand = new RMQCommand("RMQCommand", transactional);
 
-    @Override
-    public void startNonTransaction() {
-
+        rmqCommand.execute();
     }
 }

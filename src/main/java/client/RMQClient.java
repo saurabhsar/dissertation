@@ -21,10 +21,29 @@ public class RMQClient {
     private static Timer rmqRefPushTimer;
     private static Timer rmqOPPushTimer;
     private static Timer rmqTransactionalTimer;
+    private static ConnectionFactory factory = null;
+    private static Connection connection = null;
+    private static Channel nonTransactionChannel = null;
+    private static Channel transactionalChannel = null;
 
     public RMQClient(RabbitMQConfiguration rabbitMQConfiguration, MetricRegistry metricRegistry) {
         this.rabbitMQConfiguration = rabbitMQConfiguration;
         this.metricRegistry = metricRegistry;
+        if (factory == null) {
+            factory = new ConnectionFactory();
+        }
+        if (connection == null) {
+            try {
+                connection = factory.newConnection();
+                nonTransactionChannel = connection.createChannel();
+                transactionalChannel = connection.createChannel();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
+        }
+
         initializeMetrics();
     }
 
@@ -45,18 +64,12 @@ public class RMQClient {
 
     public void publish(String entity, String queueName) throws TimeoutException {
 
-        ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(rabbitMQConfiguration.getHostName());
-        Connection connection = null;
-        Channel channel = null;
         Timer.Context timerContext = rmqRefPushTimer.time();
         try {
 
             try {
-                connection = factory.newConnection();
-                channel = connection.createChannel();
-
-                channel.basicPublish("", queueName, null, entity.getBytes());
+                nonTransactionChannel.basicPublish("", queueName, null, entity.getBytes());
 
             } catch (IOException ioe) {
                 exceptionMeter.mark();
@@ -64,54 +77,34 @@ public class RMQClient {
                     log.error("push to rmq failed", ioe);
                 }
                 throw new RuntimeException("Push to RMQ failed");
-            } finally {
-                if (channel != null)
-                    channel.close();
-                if (connection != null)
-                    connection.close();
             }
-        } catch (IOException io) {
-            log.error("channel close failed");
-            throw new RuntimeException("Channel/Connection close failed");
-
         } finally {
             timerContext.stop();
         }
     }
 
     public void publishTransaction(String entity, String queueName) throws TimeoutException {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost(rabbitMQConfiguration.getHostName());
 
         Timer.Context timerContext = rmqTransactionalTimer.time();
-        Connection connection = null;
 
         try {
-            Channel channel = null;
             try {
-                connection = factory.newConnection();
-                channel = connection.createChannel();
-
-                channel.txSelect();
-                channel.basicPublish("", queueName, null, entity.getBytes());
+                transactionalChannel.txSelect();
+                transactionalChannel.basicPublish("", queueName, null, entity.getBytes());
 
                 log.info("offerRefIds has been published. Going to commit the transaction");
-                channel.txCommit();
-
+                transactionalChannel.txCommit();
             } catch (Throwable throwable) {
                 exceptionMeter.mark();
-                if (channel != null) {
-                    channel.txRollback();
+                if (transactionalChannel != null) {
+                    transactionalChannel.txRollback();
                 }
                 if (log.isErrorEnabled()) {
                     log.error("push to rmq failed", throwable);
                 }
                 throw new RuntimeException("Push to RMQ failed");
             } finally {
-                if (channel != null)
-                    channel.close();
-                if (connection != null)
-                    connection.close();
+
             }
         } catch (IOException io) {
             log.error("channel close failed");

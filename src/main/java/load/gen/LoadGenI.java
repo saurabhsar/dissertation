@@ -1,9 +1,7 @@
 package load.gen;
 
 public interface LoadGenI {
-    void initialize();
+    void initialize(boolean transactional);
 
-    void startTransaction();
-
-    void startNonTransaction();
+    void run();
 }
