@@ -1,6 +1,7 @@
-package load.gen;
+package load.gen.rmq;
 
 import command.RMQCommand;
+import load.gen.LoadGenI;
 
 public class RMQLoadGenImpl implements LoadGenI {
 

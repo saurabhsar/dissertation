@@ -92,7 +92,7 @@ public class RMQClient {
                 transactionalChannel.txSelect();
                 transactionalChannel.basicPublish("", queueName, null, entity.getBytes());
 
-                log.info("offerRefIds has been published. Going to commit the transaction");
+                log.info("Published. Going to commit the transaction");
                 transactionalChannel.txCommit();
             } catch (Throwable throwable) {
                 exceptionMeter.mark();
