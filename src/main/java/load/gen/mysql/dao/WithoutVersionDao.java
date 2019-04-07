@@ -18,8 +18,8 @@ public class WithoutVersionDao extends AbstractDAO<WithoutVersion> {
     public WithoutVersionDao(SessionFactory sessionFactory, MetricRegistry metricRegistry) {
         super(sessionFactory);
         this.metricRegistry = metricRegistry;
+        initializeMetrics();
     }
-
 
     private void initializeMetrics() {
         if (getLockedOfferTimer == null) {

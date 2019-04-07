@@ -18,6 +18,7 @@ public class WithVersionDao extends AbstractDAO<WithVersion> {
     public WithVersionDao(SessionFactory sessionFactory, MetricRegistry metricRegistry) {
         super(sessionFactory);
         this.metricRegistry = metricRegistry;
+        initializeMetrics();
     }
 
     private void initializeMetrics() {

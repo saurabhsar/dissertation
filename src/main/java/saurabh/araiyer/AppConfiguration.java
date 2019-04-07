@@ -1,5 +1,6 @@
 package saurabh.araiyer;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.db.DataSourceFactory;
 import lombok.Data;
@@ -24,4 +25,6 @@ public class AppConfiguration extends Configuration {
     private DataSourceFactory databaseConfiguration = new DataSourceFactory();
 
     private SessionFactory sessionFactory;
+
+    private MetricRegistry metricRegistry;
 }

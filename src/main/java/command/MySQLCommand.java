@@ -17,12 +17,10 @@ public class MySQLCommand {
     private Long seed;
 
     public MySQLCommand(boolean versioned) {
-//        super(HystrixCommandGroupKey.Factory.asKey("MySQL"));
         this.versioned = versioned;
         seed = System.currentTimeMillis()*100000l;
     }
 
-//    @Override
     public String run() {
         if (versioned) {
             DI.di().getInstance(WithVersionDao.class).createRecord(WithVersion.builder().content("content").id(UUID.randomUUID().toString()).build());

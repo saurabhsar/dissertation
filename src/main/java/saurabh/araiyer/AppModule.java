@@ -7,6 +7,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import load.gen.mysql.dao.WithVersionDao;
 import load.gen.mysql.dao.WithoutVersionDao;
+import metrics.JMXInitialize;
 import org.hibernate.SessionFactory;
 import resource.LoadGeneratorResource;
 
@@ -16,6 +17,7 @@ public class AppModule extends AbstractModule {
         this.bind(WithoutVersionDao.class).in(Singleton.class);
         this.bind(WithVersionDao.class).in(Singleton.class);
         this.bind(LoadGeneratorResource.class).in(Singleton.class);
+        bind(JMXInitialize.class).in(Singleton.class);
     }
 
     @Provides
@@ -25,6 +27,6 @@ public class AppModule extends AbstractModule {
 
     @Provides
     MetricRegistry metricRegistry(Provider<AppConfiguration> configurationProvider) {
-        return new MetricRegistry();
+        return configurationProvider.get().getMetricRegistry();
     }
 }

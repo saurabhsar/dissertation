@@ -2,9 +2,11 @@ package command;
 
 import client.RMQClient;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.annotation.Timed;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import configuration.RabbitMQConfiguration;
+import di.DI;
 
 public class RMQCommand extends HystrixCommand<String> {
 
@@ -15,12 +17,13 @@ public class RMQCommand extends HystrixCommand<String> {
         super(HystrixCommandGroupKey.Factory.asKey(string));
         RabbitMQConfiguration rabbitMQConfiguration = new RabbitMQConfiguration("localhost");
         if (rmqClient == null) {
-            rmqClient = new RMQClient(rabbitMQConfiguration, new MetricRegistry());
+            rmqClient = new RMQClient(rabbitMQConfiguration, DI.di().getInstance(MetricRegistry.class));
         }
         this.transactional = transactional;
     }
 
     @Override
+    @Timed
     protected String run() throws Exception {
         if (!transactional) {
             rmqClient.publish("entity", "load-test");

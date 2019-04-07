@@ -10,6 +10,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
@@ -26,6 +27,7 @@ public class RMQClient {
     private static Channel nonTransactionChannel = null;
     private static Channel transactionalChannel = null;
 
+    @Inject
     public RMQClient(RabbitMQConfiguration rabbitMQConfiguration, MetricRegistry metricRegistry) {
         this.rabbitMQConfiguration = rabbitMQConfiguration;
         this.metricRegistry = metricRegistry;

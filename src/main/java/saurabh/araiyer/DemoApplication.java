@@ -1,5 +1,7 @@
 package saurabh.araiyer;
 
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Stage;
 import com.hubspot.dropwizard.guice.GuiceBundle;
 import di.DI;
@@ -58,6 +60,9 @@ public class DemoApplication extends Application<AppConfiguration> {
                     Environment environment) throws UnknownHostException {
 
         configuration.setSessionFactory(hibernateBundle.getSessionFactory());
+        configuration.setMetricRegistry(new MetricRegistry());
+        final JmxReporter reporter = JmxReporter.forRegistry(DI.di().getInstance(MetricRegistry.class)).inDomain("dissertation").build();
+        reporter.start();
 
         final TemplateHealthCheck healthCheck =
                 new TemplateHealthCheck(configuration.getTemplate());

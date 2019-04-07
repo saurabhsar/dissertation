@@ -1,13 +1,13 @@
 package resource;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
-import com.google.common.base.Optional;
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
+import command.MySQLCommand;
 import io.dropwizard.hibernate.UnitOfWork;
+import load.gen.ThreadedLoadGenerator;
 import load.gen.mysql.MySqlLoadGenImpl;
 import load.gen.rmq.RMQLoadGenImpl;
-import load.gen.ThreadedLoadGenerator;
 import saurabh.araiyer.Saying;
 
 import javax.ws.rs.*;
@@ -33,8 +33,8 @@ public class LoadGeneratorResource {
 
     @GET
     @Timed
-    public Saying sayHello(@QueryParam("name") Optional<String> name) {
-        final String value = String.format(template, name.or(defaultName));
+    public Saying sayHello(@QueryParam("name") String name) {
+        final String value = String.format(template, name);
         return new Saying(counter.incrementAndGet(), value);
     }
 
@@ -42,7 +42,7 @@ public class LoadGeneratorResource {
     @Timed
     @Path("/rmq")
     public Response LoadRMQ(RequestModel requestModel) {
-
+        Long initTime = System.currentTimeMillis();
         rmqLoadGen.initialize(requestModel.transactional);
 
         for (int i = 0; i < requestModel.getThreads(); i++) {
@@ -53,8 +53,11 @@ public class LoadGeneratorResource {
             object.run(rmqLoadGen);
 
         }
+        Long finalTime = System.currentTimeMillis();
 
-        return Response.ok().build();
+        System.out.println(initTime-finalTime);
+
+        return Response.ok(initTime-finalTime).build();
     }
 
     @POST
@@ -74,6 +77,20 @@ public class LoadGeneratorResource {
             object.run(mySqlLoadGen);
 
         }
+
+        return Response.ok().build();
+    }
+
+    @GET
+    @Timed
+    @UnitOfWork
+    @ExceptionMetered
+    @Path("/mysql_internal")
+    public Response internalHitMySQL (@QueryParam("transactional") boolean transactional) {
+        mySqlLoadGen.initialize(transactional);
+        MySQLCommand mySQLCommand = new MySQLCommand(transactional);
+
+        mySQLCommand.run();
 
         return Response.ok().build();
     }

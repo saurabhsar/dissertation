@@ -20,7 +20,7 @@ database:
     hibernate.hbm2ddl.auto: update
     hibernate.order_inserts: true
     hibernate.order_updates: true
-    hibernate.session.events.log: true
+    hibernate.session.events.log: false
     hibernate.current_session_context_class: org.hibernate.context.internal.ManagedSessionContext
   maxWaitForConnection: 5s
   validationQuery: "/* MyService Health Check */ SELECT 1"
