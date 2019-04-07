@@ -13,12 +13,17 @@ public class MySqlLoadGenImpl implements LoadGenI {
 
     private MySQLCommand mySQLCommand = null;
     private Boolean versioned;
-    private Client client;
+    private static Client client;
+    private static boolean initialized;
+
 
     @Override
     public void initialize(boolean versioned) {
         this.versioned = versioned;
-        client = ClientUtil.buildClient();
+        if (!initialized) {
+            client = ClientUtil.buildClient();
+            initialized = true;
+        }
     }
 
     @Override
