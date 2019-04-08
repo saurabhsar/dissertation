@@ -32,4 +32,10 @@ public class WithVersionDao extends AbstractDAO<WithVersion> {
         return entity;
     }
 
+    public WithVersion updateRecord(WithVersion entity) {
+        this.currentSession().saveOrUpdate(entity);
+        return entity;
+    }
+
+
 }

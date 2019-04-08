@@ -15,10 +15,10 @@ import java.util.concurrent.TimeUnit;
 
 public class ClientUtil {
 
-    public static final int MAX_TOTAL_CONNECTIONS = 100;
-    public static final int MAX_CONNECTIONS_PER_HOST = 30;
-    public static final int CONNECTION_TIMEOUT_MILLIS = 2000;
-    public static final int READ_TIMEOUT_MILLIS = 120000;
+    private static final int MAX_TOTAL_CONNECTIONS = 100;
+    private static final int MAX_CONNECTIONS_PER_HOST = 30;
+    private static final int CONNECTION_TIMEOUT_MILLIS = 2000;
+    private static final int READ_TIMEOUT_MILLIS = 120000;
 
     public static final Client buildClient() {
         org.apache.http.client.HttpClient httpClient = createHttpClient(MAX_TOTAL_CONNECTIONS, MAX_CONNECTIONS_PER_HOST,

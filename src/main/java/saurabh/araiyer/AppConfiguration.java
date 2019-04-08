@@ -4,6 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.db.DataSourceFactory;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.SessionFactory;
 import org.hibernate.validator.constraints.NotEmpty;
 import io.dropwizard.Configuration;
@@ -11,6 +12,7 @@ import io.dropwizard.Configuration;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class AppConfiguration extends Configuration {
     @NotEmpty

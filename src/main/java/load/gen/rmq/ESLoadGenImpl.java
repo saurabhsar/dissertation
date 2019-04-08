@@ -1,23 +1,26 @@
 package load.gen.rmq;
 
-import command.RMQCommand;
+import command.ElasticSearchCommand;
 import load.gen.LoadGenI;
 
 public class ESLoadGenImpl implements LoadGenI {
 
-    private RMQCommand rmqCommand = null;
-    private boolean transactional;
+    private ElasticSearchCommand elasticSearchCommand = null;
 
     @Override
     public void initialize(boolean transactional) {
-        this.transactional = transactional;
+        //No Transaction in ES
     }
 
     @Override
     public void run() {
 
-        rmqCommand = new RMQCommand("RMQCommand", transactional);
+        elasticSearchCommand = new ElasticSearchCommand("ESCommand");
 
-        rmqCommand.execute();
+        try {
+            elasticSearchCommand.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

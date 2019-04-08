@@ -7,6 +7,7 @@ import command.MySQLCommand;
 import io.dropwizard.hibernate.UnitOfWork;
 import load.gen.ThreadedLoadGenerator;
 import load.gen.mysql.MySqlLoadGenImpl;
+import load.gen.rmq.ESLoadGenImpl;
 import load.gen.rmq.RMQLoadGenImpl;
 import saurabh.araiyer.Saying;
 
@@ -22,7 +23,9 @@ public class LoadGeneratorResource {
     private final String defaultName;
     private final AtomicLong counter;
     private RMQLoadGenImpl rmqLoadGen = new RMQLoadGenImpl();
+    private ESLoadGenImpl esLoadGen = new ESLoadGenImpl();
     private MySqlLoadGenImpl mySqlLoadGen = new MySqlLoadGenImpl();
+    MySQLCommand mySQLCommand;
 
     @Inject
     public LoadGeneratorResource() {
@@ -62,6 +65,28 @@ public class LoadGeneratorResource {
 
     @POST
     @Timed
+    @Path("/es")
+    public Response LoadES(RequestModel requestModel) {
+        Long initTime = System.currentTimeMillis();
+        esLoadGen.initialize(requestModel.transactional);
+
+        for (int i = 0; i < requestModel.getThreads(); i++) {
+
+            ThreadedLoadGenerator object = new ThreadedLoadGenerator("ESCommand" , requestModel.getLoad(),
+                    requestModel.getTimeInMilis());
+
+            object.run(esLoadGen);
+
+        }
+        Long finalTime = System.currentTimeMillis();
+
+        System.out.println(initTime-finalTime);
+
+        return Response.ok(initTime-finalTime).build();
+    }
+
+    @POST
+    @Timed
     @Path("/mysql")
     @UnitOfWork
     @ExceptionMetered
@@ -78,6 +103,8 @@ public class LoadGeneratorResource {
 
         }
 
+        mySQLCommand = new MySQLCommand(requestModel.transactional);
+
         return Response.ok().build();
     }
 
@@ -87,11 +114,7 @@ public class LoadGeneratorResource {
     @ExceptionMetered
     @Path("/mysql_internal")
     public Response internalHitMySQL (@QueryParam("transactional") boolean transactional) {
-        mySqlLoadGen.initialize(transactional);
-        MySQLCommand mySQLCommand = new MySQLCommand(transactional);
-
-        mySQLCommand.run();
-
+        mySQLCommand.write();
         return Response.ok().build();
     }
 }

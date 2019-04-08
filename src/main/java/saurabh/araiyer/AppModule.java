@@ -5,6 +5,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import load.gen.elasticsearch.ESClient;
 import load.gen.mysql.dao.WithVersionDao;
 import load.gen.mysql.dao.WithoutVersionDao;
 import metrics.JMXInitialize;
@@ -18,6 +19,7 @@ public class AppModule extends AbstractModule {
         this.bind(WithVersionDao.class).in(Singleton.class);
         this.bind(LoadGeneratorResource.class).in(Singleton.class);
         bind(JMXInitialize.class).in(Singleton.class);
+        bind(ESClient.class).in(Singleton.class);
     }
 
     @Provides

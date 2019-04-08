@@ -1,7 +1,5 @@
 package command;
 
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
 import di.DI;
 import load.gen.mysql.dao.WithVersionDao;
 import load.gen.mysql.dao.WithoutVersionDao;
@@ -21,7 +19,7 @@ public class MySQLCommand {
         seed = System.currentTimeMillis()*100000l;
     }
 
-    public String run() {
+    public String write() {
         if (versioned) {
             DI.di().getInstance(WithVersionDao.class).createRecord(WithVersion.builder().content("content").id(UUID.randomUUID().toString()).build());
         } else {

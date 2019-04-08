@@ -3,19 +3,16 @@ package load.gen.mysql;
 import client.ClientUtil;
 import client.RequestUtils;
 import com.sun.jersey.api.client.Client;
-import command.MySQLCommand;
-import load.gen.LoadGenI;
 import com.sun.jersey.api.client.ClientResponse;
+import load.gen.LoadGenI;
 
 import javax.ws.rs.core.MediaType;
 
 public class MySqlLoadGenImpl implements LoadGenI {
 
-    private MySQLCommand mySQLCommand = null;
     private Boolean versioned;
     private static Client client;
     private static boolean initialized;
-
 
     @Override
     public void initialize(boolean versioned) {
