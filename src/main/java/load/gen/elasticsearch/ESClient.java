@@ -37,15 +37,6 @@ public class ESClient {
     private final String urlPut = "http://localhost:9200/load_test/post/%s";
     private TransportClient esclient;
 
-    {
-        try {
-            esclient = new PreBuiltTransportClient(
-                        Settings.builder().put("client.transport.sniff", true).put("cluster.name","elasticsearch").build())
-                        .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-    }
 
     String urlGet = "http://localhost:9200/load_test/post/%s";
 
@@ -125,6 +116,15 @@ public class ESClient {
     }
 
     public void get_v2() {
+
+        try {
+            esclient = new PreBuiltTransportClient(
+                    Settings.builder().build())
+                    .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
         int randomInt = random.nextInt()%5000;
         QueryBuilder matchSpecificFieldQuery= QueryBuilders.matchQuery("user", randomInt > 0 ? randomInt : -randomInt);
         esclient.prepareSearch()
