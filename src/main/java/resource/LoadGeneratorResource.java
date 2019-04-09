@@ -2,6 +2,7 @@ package resource;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import command.MySQLCommand;
 import io.dropwizard.hibernate.UnitOfWork;
@@ -14,6 +15,7 @@ import saurabh.araiyer.Saying;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Path("/gen-load")
@@ -25,7 +27,8 @@ public class LoadGeneratorResource {
     private RMQLoadGenImpl rmqLoadGen = new RMQLoadGenImpl();
     private ESLoadGenImpl esLoadGen = new ESLoadGenImpl();
     private MySqlLoadGenImpl mySqlLoadGen = new MySqlLoadGenImpl();
-    MySQLCommand mySQLCommand;
+    private MySQLCommand mySQLCommand;
+    private List<ThreadedLoadGenerator> threadedLoadGenerators = Lists.newArrayList();
 
     @Inject
     public LoadGeneratorResource() {
@@ -46,19 +49,23 @@ public class LoadGeneratorResource {
     @Path("/rmq")
     public Response LoadRMQ(RequestModel requestModel) {
         Long initTime = System.currentTimeMillis();
-        rmqLoadGen.initialize(requestModel.transactional);
+        rmqLoadGen.initialize(requestModel.transactional, requestModel.durable, requestModel.requestType);
 
         for (int i = 0; i < requestModel.getThreads(); i++) {
 
-            ThreadedLoadGenerator object = new ThreadedLoadGenerator("RMQCommand" , requestModel.getLoad(),
-                    requestModel.getTimeInMilis());
+            ThreadedLoadGenerator object = new ThreadedLoadGenerator("RMQCommand" ,
+                    requestModel.getLoad(),
+                    requestModel.getTimeInMilis(),
+                    rmqLoadGen);
 
-            object.run(rmqLoadGen);
+            object.start();
+            threadedLoadGenerators.add(object);
 
         }
-        Long finalTime = System.currentTimeMillis();
 
-        System.out.println(initTime-finalTime);
+        waitForCompletion(threadedLoadGenerators);
+
+        Long finalTime = System.currentTimeMillis();
 
         return Response.ok(initTime-finalTime).build();
     }
@@ -68,21 +75,37 @@ public class LoadGeneratorResource {
     @Path("/es")
     public Response LoadES(RequestModel requestModel) {
         Long initTime = System.currentTimeMillis();
-        esLoadGen.initialize(requestModel.transactional);
+        esLoadGen.initialize(requestModel.transactional, requestModel.durable, requestModel.requestType);
 
         for (int i = 0; i < requestModel.getThreads(); i++) {
 
             ThreadedLoadGenerator object = new ThreadedLoadGenerator("ESCommand" , requestModel.getLoad(),
-                    requestModel.getTimeInMilis());
+                    requestModel.getTimeInMilis(), esLoadGen);
 
-            object.run(esLoadGen);
+            object.start();
+            threadedLoadGenerators.add(object);
 
         }
+
+        waitForCompletion(threadedLoadGenerators);
+
         Long finalTime = System.currentTimeMillis();
 
         System.out.println(initTime-finalTime);
 
         return Response.ok(initTime-finalTime).build();
+    }
+
+    private void waitForCompletion(List<ThreadedLoadGenerator> threadedLoadGenerators) {
+        for (ThreadedLoadGenerator threadedLoadGenerator : threadedLoadGenerators) {
+            try {
+                threadedLoadGenerator.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        threadedLoadGenerators.clear();
     }
 
     @POST
@@ -92,20 +115,24 @@ public class LoadGeneratorResource {
     @ExceptionMetered
     public Response LoadMySQL(RequestModel requestModel) {
 
-        mySqlLoadGen.initialize(requestModel.transactional);
+        mySqlLoadGen.initialize(requestModel.transactional, requestModel.durable, requestModel.requestType);
+        mySQLCommand = new MySQLCommand(requestModel.transactional, requestModel.requestType);
+        Long initTime = System.currentTimeMillis();
 
         for (int i = 0; i < requestModel.getThreads(); i++) {
 
             ThreadedLoadGenerator object = new ThreadedLoadGenerator("MySQLCommand" , requestModel.getLoad(),
-                    requestModel.getTimeInMilis());
+                    requestModel.getTimeInMilis(), mySqlLoadGen);
 
-            object.run(mySqlLoadGen);
-
+            object.start();
+            threadedLoadGenerators.add(object);
         }
 
-        mySQLCommand = new MySQLCommand(requestModel.transactional);
+        waitForCompletion(threadedLoadGenerators);
 
-        return Response.ok().build();
+        Long finalTime = System.currentTimeMillis();
+
+        return Response.ok(initTime-finalTime).build();
     }
 
     @GET
@@ -114,7 +141,7 @@ public class LoadGeneratorResource {
     @ExceptionMetered
     @Path("/mysql_internal")
     public Response internalHitMySQL (@QueryParam("transactional") boolean transactional) {
-        mySQLCommand.write();
+        mySQLCommand.perform();
         return Response.ok().build();
     }
 }
