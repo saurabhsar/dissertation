@@ -12,4 +12,6 @@ public class RequestModel {
     int load;
     int timeInMilis;
     boolean transactional;
+    boolean durable;
+    RequestType requestType;
 }

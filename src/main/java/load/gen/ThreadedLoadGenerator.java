@@ -2,26 +2,25 @@ package load.gen;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.annotation.Timed;
 import di.DI;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 public class ThreadedLoadGenerator extends Thread {
     private double load;
     private long duration;
     private MetricRegistry metricRegistry;
     private Counter counter;
+    private LoadGenI loadGenI;
 
-    public ThreadedLoadGenerator(String name, double load, long duration) {
+    public ThreadedLoadGenerator(String name, double load, long duration, LoadGenI loadGenI) {
         super(name);
         this.load = load;
         this.duration = duration;
         this.metricRegistry = DI.di().getInstance(MetricRegistry.class);
+        this.loadGenI = loadGenI;
         counter = metricRegistry.counter("threadCounter");
     }
 
-    public void run(LoadGenI loadGenI) {
+    public void run() {
         long startTime = System.currentTimeMillis();
         try {
             // Loop for the given duration
