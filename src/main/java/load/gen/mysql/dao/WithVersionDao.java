@@ -5,6 +5,7 @@ import com.codahale.metrics.Timer;
 import io.dropwizard.hibernate.AbstractDAO;
 import load.gen.mysql.model.WithVersion;
 import org.hibernate.CacheMode;
+import org.hibernate.LockOptions;
 import org.hibernate.SQLQuery;
 import org.hibernate.SessionFactory;
 
@@ -12,6 +13,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 @Singleton
 public class WithVersionDao extends AbstractDAO<WithVersion> {
@@ -40,17 +42,33 @@ public class WithVersionDao extends AbstractDAO<WithVersion> {
         return entity;
     }
 
-    public WithVersion updateRecord(WithVersion entity) {
-        this.currentSession().saveOrUpdate(entity);
+    public WithVersion updateRecord() {
+        String key_to_update = randomizeKey();
+        WithVersion entity = (WithVersion) this.currentSession().load(WithVersion.class, key_to_update, LockOptions.NONE);
+        entity.setContent(UUID.randomUUID().toString());
+        this.currentSession().persist(entity);
         return entity;
     }
 
-    public void readRandom() {
+    public WithVersion updateRecordLocked() {
+        String key_to_update = randomizeKey();
+        WithVersion entity = (WithVersion) this.currentSession().load(WithVersion.class, key_to_update, LockOptions.UPGRADE);
+        entity.setContent(UUID.randomUUID().toString());
+        this.currentSession().persist(entity);
+        return entity;
+    }
+
+
+    private String randomizeKey() {
         getAllKeys();
         int var = random.nextInt();
         var = var > 0 ? var : -var;
-        String key_to_fetch = (String) keys.get(var % keys.size());
-        SQLQuery sqlQuery = this.currentSession().createSQLQuery(getQuery + key_to_fetch + close);
+        return (String) keys.get(var % keys.size());
+    }
+
+    public void readRandom() {
+        randomizeKey();
+        SQLQuery sqlQuery = this.currentSession().createSQLQuery(getQuery + randomizeKey() + close);
         this.currentSession().setCacheMode(CacheMode.IGNORE);
         sqlQuery.list().size();
         this.currentSession().clear();

@@ -5,6 +5,7 @@ import com.codahale.metrics.Timer;
 import io.dropwizard.hibernate.AbstractDAO;
 import load.gen.mysql.model.WithoutVersion;
 import org.hibernate.CacheMode;
+import org.hibernate.LockOptions;
 import org.hibernate.SQLQuery;
 import org.hibernate.SessionFactory;
 
@@ -12,6 +13,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 @Singleton
 public class WithoutVersionDao extends AbstractDAO<WithoutVersion> {
@@ -40,6 +42,31 @@ public class WithoutVersionDao extends AbstractDAO<WithoutVersion> {
         this.currentSession().save(entity);
         return entity;
     }
+
+    public WithoutVersion updateRecord() {
+        String key_to_update = randomizeKey();
+        WithoutVersion entity = (WithoutVersion) this.currentSession().load(WithoutVersion.class, key_to_update, LockOptions.NONE);
+        entity.setContent(UUID.randomUUID().toString());
+        this.currentSession().persist(entity);
+        return entity;
+    }
+
+    public WithoutVersion updateRecordLocked() {
+        String key_to_update = randomizeKey();
+        WithoutVersion entity = (WithoutVersion) this.currentSession().load(WithoutVersion.class, key_to_update, LockOptions.UPGRADE);
+        entity.setContent(UUID.randomUUID().toString());
+        this.currentSession().persist(entity);
+        return entity;
+    }
+
+
+    private String randomizeKey() {
+        getAllKeys();
+        int var = random.nextInt();
+        var = var > 0 ? var : -var;
+        return (String) keys.get(var % keys.size());
+    }
+
 
     public void readRandom() {
         getAllKeys();

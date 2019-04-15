@@ -10,6 +10,7 @@ import load.gen.ThreadedLoadGenerator;
 import load.gen.mysql.MySqlLoadGenImpl;
 import load.gen.rmq.ESLoadGenImpl;
 import load.gen.rmq.RMQLoadGenImpl;
+import org.hibernate.CacheMode;
 import saurabh.araiyer.Saying;
 
 import javax.ws.rs.*;
@@ -111,10 +112,24 @@ public class LoadGeneratorResource {
     @POST
     @Timed
     @Path("/mysql")
-    @UnitOfWork
+    @UnitOfWork(cacheMode = CacheMode.IGNORE)
     @ExceptionMetered
     public Response LoadMySQL(RequestModel requestModel) {
 
+        return getResponse(requestModel);
+    }
+
+    @POST
+    @Timed
+    @Path("/mysql_nt")
+    @UnitOfWork(transactional = false, cacheMode = CacheMode.IGNORE)
+    @ExceptionMetered
+    public Response LoadMySQLNT(RequestModel requestModel) {
+
+        return getResponse(requestModel);
+    }
+
+    private Response getResponse(RequestModel requestModel) {
         mySqlLoadGen.initialize(requestModel.transactional, requestModel.durable, requestModel.requestType);
         mySQLCommand = new MySQLCommand(requestModel.transactional, requestModel.requestType);
         Long initTime = System.currentTimeMillis();

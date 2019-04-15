@@ -24,5 +24,5 @@ public class WithVersion {
 
     @Version
     @Column(name = "version")
-    private int version;
+    private Integer version;
 }

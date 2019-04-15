@@ -2,6 +2,8 @@ package resource;
 
 public enum RequestType {
     READ,
-    WRITE
+    WRITE,
+    MODIFY,
+    MODIFY_LOCKED,
     ;
 }

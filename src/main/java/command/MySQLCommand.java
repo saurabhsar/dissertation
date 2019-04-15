@@ -33,11 +33,23 @@ public class MySQLCommand {
                 DI.di().getInstance(WithoutVersionDao.class).createRecord(WithoutVersion.builder()
                         .content("content").id(UUID.randomUUID().toString()).build());
             }
-        } else {
+        } else if (RequestType.READ.equals(requestType)) {
             if (versioned) {
                 DI.di().getInstance(WithVersionDao.class).readRandom();
             } else {
                 DI.di().getInstance(WithoutVersionDao.class).readRandom();
+            }
+        } else if (RequestType.MODIFY.equals(requestType)) {
+            if (versioned) {
+                DI.di().getInstance(WithVersionDao.class).updateRecord();
+            } else {
+                DI.di().getInstance(WithoutVersionDao.class).updateRecord();
+            }
+        } else if (RequestType.MODIFY_LOCKED.equals(requestType)) {
+            if (versioned) {
+                DI.di().getInstance(WithVersionDao.class).updateRecordLocked();
+            } else {
+                DI.di().getInstance(WithoutVersionDao.class).updateRecordLocked();
             }
         }
         System.out.println(atomicLong.incrementAndGet());
