@@ -1,0 +1,32 @@
+server:
+  adminConnectors:
+    -
+      port: 1729
+      type: http
+  applicationConnectors:
+    -
+      acceptorThreads: 7
+      port: 1730
+      selectorThreads: 14
+      type: http
+database:
+  driverClass: com.mysql.jdbc.Driver
+  user: root
+  password: password
+  url: jdbc:mysql://localhost:3306/load_test?useUnicode=yes&characterEncoding=UTF-8
+  properties:
+    charSet: UTF-8
+    hibernate.dialect: org.hibernate.dialect.MySQL5Dialect
+    hibernate.hbm2ddl.auto: update
+    hibernate.order_inserts: true
+    hibernate.order_updates: true
+    hibernate.session.events.log: false
+    hibernate.current_session_context_class: org.hibernate.context.internal.ManagedSessionContext
+  maxWaitForConnection: 5s
+  validationQuery: "/* MyService Health Check */ SELECT 1"
+  minSize: 8
+  maxSize: 100
+  checkConnectionWhileIdle: true
+  validationInterval: 10s
+  minIdleTime: "1 minute"
+

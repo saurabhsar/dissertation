@@ -1,9 +1,19 @@
 package saurabh.araiyer;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dropwizard.db.DataSourceFactory;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.hibernate.SessionFactory;
 import org.hibernate.validator.constraints.NotEmpty;
 import io.dropwizard.Configuration;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class AppConfiguration extends Configuration {
     @NotEmpty
     private String template = "template";
@@ -11,23 +21,12 @@ public class AppConfiguration extends Configuration {
     @NotEmpty
     private String defaultName = "Stranger";
 
-    @JsonProperty
-    public String getTemplate() {
-        return template;
-    }
+    @Valid
+    @NotNull
+    @JsonProperty("database")
+    private DataSourceFactory databaseConfiguration = new DataSourceFactory();
 
-    @JsonProperty
-    public void setTemplate(String template) {
-        this.template = template;
-    }
+    private SessionFactory sessionFactory;
 
-    @JsonProperty
-    public String getDefaultName() {
-        return defaultName;
-    }
-
-    @JsonProperty
-    public void setDefaultName(String name) {
-        this.defaultName = name;
-    }
+    private MetricRegistry metricRegistry;
 }

@@ -1,12 +1,13 @@
-package load.gen;
+package load.gen.mysql;
 
 import com.google.common.collect.Maps;
+import load.gen.DataProviderI;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
-public class RMQDataProviderImpl implements DataProviderI {
+public class MySQLDataProviderImpl implements DataProviderI {
     @Override
     public List<String> getIdsToPurge() {
         return null;

@@ -1,15 +1,13 @@
 package client;
 
-import configuration.RabbitMQConfiguration;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.rabbitmq.client.*;
+import configuration.RabbitMQConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
@@ -21,11 +19,34 @@ public class RMQClient {
     private static Timer rmqRefPushTimer;
     private static Timer rmqOPPushTimer;
     private static Timer rmqTransactionalTimer;
+    private static ConnectionFactory factory = null;
+    private static Connection connection = null;
+    private static Channel nonTransactionChannel = null;
+    private static Channel transactionalChannel = null;
 
+    @Inject
     public RMQClient(RabbitMQConfiguration rabbitMQConfiguration, MetricRegistry metricRegistry) {
         this.rabbitMQConfiguration = rabbitMQConfiguration;
         this.metricRegistry = metricRegistry;
+        if (factory == null) {
+            factory = new ConnectionFactory();
+        }
+        initializeChannels();
         initializeMetrics();
+    }
+
+    private void initializeChannels() {
+        if (connection == null || nonTransactionChannel==null || transactionalChannel == null) {
+            try {
+                connection = factory.newConnection();
+                nonTransactionChannel = connection.createChannel();
+                transactionalChannel = connection.createChannel();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void initializeMetrics() {
@@ -43,20 +64,14 @@ public class RMQClient {
         }
     }
 
-    public void publish(String entity, String queueName) throws TimeoutException {
+    public void publish(String entity, String queueName, boolean durable) throws TimeoutException {
 
-        ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(rabbitMQConfiguration.getHostName());
-        Connection connection = null;
-        Channel channel = null;
         Timer.Context timerContext = rmqRefPushTimer.time();
         try {
 
             try {
-                connection = factory.newConnection();
-                channel = connection.createChannel();
-
-                channel.basicPublish("", queueName, null, entity.getBytes());
+                propertyBuildandPersist(entity, queueName, durable, nonTransactionChannel);
 
             } catch (IOException ioe) {
                 exceptionMeter.mark();
@@ -64,11 +79,43 @@ public class RMQClient {
                     log.error("push to rmq failed", ioe);
                 }
                 throw new RuntimeException("Push to RMQ failed");
+            }
+        } finally {
+            timerContext.stop();
+        }
+    }
+
+    private static void propertyBuildandPersist(String entity, String queueName, boolean durable, Channel channel) throws IOException {
+        AMQP.BasicProperties basicProperties = null;
+        AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder();
+        if (durable) {
+            basicProperties = builder.deliveryMode(2).build();
+        }
+        channel.basicPublish("", queueName, basicProperties, entity.getBytes());
+    }
+
+    public void publishTransaction(String entity, String queueName, boolean durable) throws TimeoutException {
+
+        Timer.Context timerContext = rmqTransactionalTimer.time();
+
+        try {
+            try {
+                transactionalChannel.txSelect();
+                propertyBuildandPersist(entity, queueName, durable, transactionalChannel);
+
+                log.info("Published. Going to commit the transaction");
+                transactionalChannel.txCommit();
+            } catch (Throwable throwable) {
+                exceptionMeter.mark();
+                if (transactionalChannel != null) {
+                    transactionalChannel.txRollback();
+                }
+                if (log.isErrorEnabled()) {
+                    log.error("push to rmq failed", throwable);
+                }
+                throw new RuntimeException("Push to RMQ failed");
             } finally {
-                if (channel != null)
-                    channel.close();
-                if (connection != null)
-                    connection.close();
+
             }
         } catch (IOException io) {
             log.error("channel close failed");
@@ -79,46 +126,25 @@ public class RMQClient {
         }
     }
 
-    public void publishTransaction(String entity, String queueName) throws TimeoutException {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost(rabbitMQConfiguration.getHostName());
-
-        Timer.Context timerContext = rmqTransactionalTimer.time();
-        Connection connection = null;
-
+    public void read(String queueName) {
+        initializeChannels();
+        boolean autoAck = false;
+        GetResponse response = null;
         try {
-            Channel channel = null;
+            response = nonTransactionChannel.basicGet(queueName, autoAck);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (response == null) {
+        } else {
+            AMQP.BasicProperties props = response.getProps();
+            long deliveryTag = response.getEnvelope().getDeliveryTag();
+
             try {
-                connection = factory.newConnection();
-                channel = connection.createChannel();
-
-                channel.txSelect();
-                channel.basicPublish("", queueName, null, entity.getBytes());
-
-                log.info("offerRefIds has been published. Going to commit the transaction");
-                channel.txCommit();
-
-            } catch (Throwable throwable) {
-                exceptionMeter.mark();
-                if (channel != null) {
-                    channel.txRollback();
-                }
-                if (log.isErrorEnabled()) {
-                    log.error("push to rmq failed", throwable);
-                }
-                throw new RuntimeException("Push to RMQ failed");
-            } finally {
-                if (channel != null)
-                    channel.close();
-                if (connection != null)
-                    connection.close();
+                nonTransactionChannel.basicAck(deliveryTag, false);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException io) {
-            log.error("channel close failed");
-            throw new RuntimeException("Channel/Connection close failed");
-
-        } finally {
-            timerContext.stop();
         }
     }
 }
